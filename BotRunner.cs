@@ -1,21 +1,26 @@
-﻿using Discord;
-using Discord.WebSocket;
+﻿#nullable enable
+
+using Discord;
 using KIBAEMON2024_CSharp.Enviroment;
 
 namespace KIBAEMON2024_CSharp
 {
     static class BotRunner
     {
-        public static DiscordSocketClient Client { get; set; } = new();
-
         public static async Task Main(string[] args)
         {
-            BotEnvironment.Initialize();
+            BotManager.Initialize();
 
-            Client = new DiscordSocketClient();
-            Client.Log += Log;
-            await Client.LoginAsync(TokenType.Bot, args.Any() ? BotEnvironment.Bots[args[0]].Authorization.Token : BotEnvironment.Bots.First().Value.Authorization.Token);
-            await Client.StartAsync();
+            var bot = BotManager.GetBot(args[0]);
+
+            if (bot == null)
+            {
+                Console.WriteLine("Bot not found.");
+                return;
+            }
+
+            await bot.Client.LoginAsync(TokenType.Bot, bot.Authorization.Token);
+            await bot.Client.StartAsync();
 
             await Task.Delay(-1);
         }
