@@ -30,6 +30,6 @@ public class Bot
 
     public void Log(string message)
     {
-        LoggingService.LogAsync(new LogMessage(LogSeverity.Info, "Bot", message));
+        LoggingService.LogAsync(new LogMessage(LogSeverity.Info, Name, message));
     }
 }
