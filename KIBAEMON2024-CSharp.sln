@@ -2,6 +2,8 @@
 Microsoft Visual Studio Solution File, Format Version 12.00
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "KIBAEMON2024-CSharp", "KIBAEMON2024-CSharp.csproj", "{5CC8DE6B-999F-4D70-B55F-7B0456A322ED}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "KIBAEMON2024-Core", "KIBAEMON2024-Core\KIBAEMON2024-Core.csproj", "{DFEFD8FD-FB61-41B7-B3DC-CAAC6C556293}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -12,5 +14,9 @@ Global
 		{5CC8DE6B-999F-4D70-B55F-7B0456A322ED}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{5CC8DE6B-999F-4D70-B55F-7B0456A322ED}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{5CC8DE6B-999F-4D70-B55F-7B0456A322ED}.Release|Any CPU.Build.0 = Release|Any CPU
+		{DFEFD8FD-FB61-41B7-B3DC-CAAC6C556293}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{DFEFD8FD-FB61-41B7-B3DC-CAAC6C556293}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{DFEFD8FD-FB61-41B7-B3DC-CAAC6C556293}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{DFEFD8FD-FB61-41B7-B3DC-CAAC6C556293}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal

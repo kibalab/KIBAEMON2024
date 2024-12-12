@@ -1,34 +1,26 @@
-﻿#nullable enable
-
-using Discord;
+﻿using Discord;
 using KIBAEMON2024_CSharp.Enviroment;
 
-namespace KIBAEMON2024_CSharp
+namespace KIBAEMON2024_CSharp;
+
+static class BotRunner
 {
-    static class BotRunner
+    public static async Task Main(string[] args)
     {
-        public static async Task Main(string[] args)
+        BotManager.Initialize();
+
+        var bot = BotManager.GetBot(args[0]);
+
+        if (bot == null)
         {
-            BotManager.Initialize();
-
-            var bot = BotManager.GetBot(args[0]);
-
-            if (bot == null)
-            {
-                Console.WriteLine("Bot not found.");
-                return;
-            }
-
-            await bot.Client.LoginAsync(TokenType.Bot, bot.Authorization.Token);
-            await bot.Client.StartAsync();
-
-            await Task.Delay(-1);
+            Console.WriteLine("Bot not found.");
+            return;
         }
 
-        private static Task Log(LogMessage arg)
-        {
-            Console.WriteLine(arg.ToString());
-            return Task.CompletedTask;
-        }
+        await bot.Client.LoginAsync(TokenType.Bot, bot.Authorization.Token);
+        await bot.Client.StartAsync();
+        Console.WriteLine($"Bot {bot.Name} started.");
+
+        await Task.Delay(-1);
     }
 }

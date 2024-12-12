@@ -1,6 +1,4 @@
-﻿#nullable enable
-
-namespace KIBAEMON2024_CSharp.Enviroment;
+﻿namespace KIBAEMON2024_CSharp.Enviroment;
 
 [Serializable]
 public class Authorization

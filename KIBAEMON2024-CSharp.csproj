@@ -9,10 +9,27 @@
     </PropertyGroup>
 
     <ItemGroup>
+      <PackageReference Include="CliWrap" Version="3.7.0" />
       <PackageReference Include="Discord.Net" Version="3.16.0" />
       <PackageReference Include="Discord.Net.Extensions" Version="1.2.1" />
       <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
       <PackageReference Include="YamlDotNet" Version="16.2.0" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <Compile Remove="KIBAEMON2024-Core\obj\**" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <EmbeddedResource Remove="KIBAEMON2024-Core\obj\**" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <None Remove="KIBAEMON2024-Core\obj\**" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <ProjectReference Include="KIBAEMON2024-Core\KIBAEMON2024-Core.csproj" />
     </ItemGroup>
 
 </Project>
