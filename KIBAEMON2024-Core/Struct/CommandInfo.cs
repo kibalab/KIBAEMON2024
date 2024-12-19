@@ -8,12 +8,12 @@ public class CommandInfo(MethodInfo method, CommandAttribute attribute, object i
     public CommandAttribute Attribute { get; } = attribute;
     public object DeclaringInstance { get; } = instance;
 
-    public async Task ExecuteAsync(Bot bot, CommandContext context, CommandParameters parameters)
+    public void ExecuteAsync(Bot bot, CommandContext context, CommandParameters parameters)
     {
         var result = Method.Invoke(DeclaringInstance, [bot, context, parameters]);
         if (result is Task task)
         {
-            await task;
+            task.Start();
         }
     }
 }

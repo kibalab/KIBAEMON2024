@@ -32,7 +32,7 @@ public class MusicCommands : ICommandGroup
         }
 
 
-        if (context.User is IVoiceState voiceState && voiceState.VoiceChannel != null)
+        if (context.User is IVoiceState { VoiceChannel: not null } voiceState)
         {
             await player.JoinAsync((SocketVoiceChannel)voiceState.VoiceChannel);
             await context.Channel.SendMessageAsync("음성 채널에 접속하였습니다.");
@@ -55,32 +55,76 @@ public class MusicCommands : ICommandGroup
             return;
         }
 
+        // 길드 ID 획득
+        var guildId = (context.Guild as SocketGuild)?.Id;
+        if (guildId == null)
+        {
+            await context.Channel.SendMessageAsync("길드에서만 사용할 수 있는 명령입니다.");
+            return;
+        }
+
+        var playerContext = player.GetContext(guildId.Value);
+
+        if (playerContext == null || playerContext.AudioClient == null)
+        {
+            if (context.User is IVoiceState { VoiceChannel: not null } voiceState)
+            {
+                await player.JoinAsync((SocketVoiceChannel)voiceState.VoiceChannel);
+            }
+            else
+            {
+                await context.Channel.SendMessageAsync("먼저 음성 채널에 접속해주세요.");
+                return;
+            }
+        }
+
         await context.Channel.SendMessageAsync($"재생 시작: {url}");
-        await player.PlayAsync(url);
+        await player.PlayAsync(guildId.Value, url);
     }
 
-    [Command("music", "현재 재생중인 오디오 정지", "stop")]
+    [Command("music", "재생 중지", "stop")]
     public async Task StopAsync(Bot bot, CommandContext context, CommandParameters parameters)
     {
         var player = bot.GetService<PlayerService>();
+        var guildId = (context.Guild as SocketGuild)?.Id;
 
-        player.StopPlaying();
-        await context.Channel.SendMessageAsync("재생을 정지하였습니다.");
+        if (guildId == null)
+        {
+            await context.Channel.SendMessageAsync("길드에서만 사용할 수 있습니다.");
+            return;
+        }
+
+        player.StopPlaying(guildId.Value);
+        await context.Channel.SendMessageAsync("재생을 중지했습니다.");
     }
 
     [Command("music", "현재 재생중인 오디오 일시정지/재개", "pause")]
     public async Task PauseAsync(Bot bot, CommandContext context, CommandParameters parameters)
     {
         var player = bot.GetService<PlayerService>();
+        var guildId = (context.Guild as SocketGuild)?.Id;
+        var playerContext = player.GetContext(guildId.GetValueOrDefault());
 
-        if (!player.IsPlaying)
+        if (guildId == null)
+        {
+            await context.Channel.SendMessageAsync("길드에서만 사용할 수 있습니다.");
+            return;
+        }
+
+        if (playerContext == null || playerContext.AudioClient == null)
+        {
+            await context.Channel.SendMessageAsync("먼저 음성 채널에 접속해주세요.");
+            return;
+        }
+
+        if (playerContext.IsPaused)
         {
             await context.Channel.SendMessageAsync("현재 재생중인 오디오가 없습니다.");
             return;
         }
 
-        player.Pause();
-        if (player.IsPaused)
+        player.Pause(guildId.Value);
+        if (playerContext.IsPaused)
             await context.Channel.SendMessageAsync("재생을 일시정지하였습니다.");
         else
             await context.Channel.SendMessageAsync("재생을 재개하였습니다.");
@@ -90,8 +134,15 @@ public class MusicCommands : ICommandGroup
     public async Task LeaveAsync(Bot bot, CommandContext context, CommandParameters parameters)
     {
         var player = bot.GetService<PlayerService>();
+        var guildId = (context.Guild as SocketGuild)?.Id;
 
-        await player.LeaveAsync();
+        if (guildId == null)
+        {
+            await context.Channel.SendMessageAsync("길드에서만 사용할 수 있습니다.");
+            return;
+        }
+
+        await player.LeaveAsync(guildId.Value);
         await context.Channel.SendMessageAsync("음성 채널에서 나갔습니다.");
     }
 }

@@ -12,8 +12,10 @@
       <PackageReference Include="CliWrap" Version="3.7.0" />
       <PackageReference Include="Discord.Net" Version="3.16.0" />
       <PackageReference Include="Discord.Net.Extensions" Version="1.2.1" />
+      <PackageReference Include="FFMpegCore" Version="5.1.0" />
       <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
       <PackageReference Include="YamlDotNet" Version="16.2.0" />
+      <PackageReference Include="YoutubeExplode" Version="6.5.0" />
     </ItemGroup>
 
     <ItemGroup>
@@ -26,6 +28,12 @@
 
     <ItemGroup>
       <None Remove="KIBAEMON2024-Core\obj\**" />
+      <None Update="libsodium.dll">
+        <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+      </None>
+      <None Update="libopus.dll">
+        <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+      </None>
     </ItemGroup>
 
     <ItemGroup>

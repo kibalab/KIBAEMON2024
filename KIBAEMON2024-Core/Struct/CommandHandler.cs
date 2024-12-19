@@ -36,7 +36,7 @@ public class CommandHandler(CommandManager commandManager, Bot bot)
                 var commandParams = new CommandParameters(parametersDict);
 
                 var command = CommandManager.GetCommand(alias);
-                if (command != null) await command.ExecuteAsync(Bot, context, commandParams);
+                if (command != null) command.ExecuteAsync(Bot, context, commandParams);
                 else await context.Channel.SendMessageAsync($"알 수 없는 명령어: {alias}");
             }
         }

@@ -1,128 +1,149 @@
-﻿using System.Diagnostics;
-using CliWrap;
-using CliWrap.Buffered;
+﻿using Discord;
 using Discord.Audio;
 using Discord.WebSocket;
 using KIBAEMON2024_Core.Struct;
 
-namespace KIBAEMON2024_CSharp.Service;
-
-public class PlayerService : IService
+namespace KIBAEMON2024_CSharp.Service
 {
-    private IAudioClient _audioClient;
-    private Process _ffmpeg;
-    private bool _isPlaying = false;
-    private bool _isPaused = false;
-
-    public SocketVoiceChannel CurrentVoiceChannel { get; private set; }
-
-    public async Task JoinAsync(SocketVoiceChannel channel)
+    public class PlayerContext
     {
-        // For the next step with transmitting audio, you would want to pass this Audio Client in to a service.
-        _audioClient = await channel.ConnectAsync();
-        CurrentVoiceChannel = channel;
+        public IAudioClient? AudioClient { get; set; }
+        public IVoiceChannel? VoiceChannel { get; set; }
+        public bool IsPlaying { get; set; }
+        public bool IsPaused { get; set; }
+        public CancellationTokenSource? CancellationTokenSource { get; set; }
     }
 
-    public async Task LeaveAsync()
+    public class PlayerService : IService
     {
-        StopPlaying();
-        if (_audioClient != null)
+        private Dictionary<ulong, PlayerContext> PlayerContexts { get; set; } = new();
+
+        private StreamProviderManager StreamProvider { get; } = new();
+
+        public async Task JoinAsync(SocketVoiceChannel channel)
         {
-            await _audioClient.StopAsync();
-            _audioClient = null;
-            CurrentVoiceChannel = null;
-        }
-    }
-
-    public void StopPlaying()
-    {
-        _isPlaying = false;
-        _isPaused = false;
-        if (_ffmpeg != null && !_ffmpeg.HasExited)
-        {
-            _ffmpeg.Kill();
-            _ffmpeg.Dispose();
-            _ffmpeg = null;
-        }
-    }
-
-    public async Task PlayAsync(string youtubeUrl)
-    {
-        Console.WriteLine($"Play: {youtubeUrl}");
-
-        _isPlaying = true;
-        _isPaused = false;
-
-        // 직접 오디오 스트림 URL 가져오기
-        var audioUrl = await GetDirectAudioUrl(youtubeUrl);
-        Console.WriteLine($"Audio URL: {audioUrl}");
-        if (string.IsNullOrEmpty(audioUrl))
-        {
-            throw new Exception("오디오 URL을 가져올 수 없습니다. yt-dlp 설정을 확인하세요.");
-        }
-
-        SendAsync(_audioClient, audioUrl).Wait();
-
-        return;
-
-        async Task SendAsync(IAudioClient client, string path)
-        {
-            // Create FFmpeg using the previous example
-            using var ffmpeg = CreateStream(path);
-            await using var output = ffmpeg.StandardOutput.BaseStream;
-            await using var discord = client.CreatePCMStream(AudioApplication.Mixed);
-
-            await output.CopyToAsync(discord);
-            await discord.FlushAsync();
-        }
-
-        Process CreateStream(string path)
-        {
-            return Process.Start(new ProcessStartInfo
+            var guildId = channel.Guild.Id;
+            if (!PlayerContexts.TryGetValue(guildId, out var context))
             {
-                FileName = "ffmpeg",
-                Arguments = $"-hide_banner -loglevel panic -i \"{path}\" -ac 2 -f s16le -ar 48000 pipe:1",
-                UseShellExecute = false,
-                RedirectStandardOutput = true,
-            });
+                context = new PlayerContext();
+                PlayerContexts[guildId] = context;
+            }
+
+            if (context.AudioClient != null)
+            {
+                await LeaveAsync(guildId);
+            }
+
+            var client = await channel.ConnectAsync(external: false);
+            context.AudioClient = client;
+            context.VoiceChannel = channel;
         }
 
-        async Task<string> GetDirectAudioUrl(string youtubeUrl)
+        public async Task LeaveAsync(ulong guildId)
         {
-            // yt-dlp로 오디오 스트림 URL만 추출
-            // full Command: yt-dlp -f bestaudio -g "https://www.youtube.com/watch
-            var process = new Process
+            if (PlayerContexts.TryGetValue(guildId, out var context))
             {
-                StartInfo = new ProcessStartInfo
+                StopPlaying(guildId);
+                if (context.AudioClient != null)
                 {
-                    FileName = "yt-dlp",
-                    Arguments = $"-f bestaudio -g \"{youtubeUrl}\"",
-                    RedirectStandardOutput = true,
-                    UseShellExecute = false,
-                    CreateNoWindow = true
+                    await context.AudioClient.StopAsync();
+                    context.AudioClient = null;
+                    context.VoiceChannel = null;
                 }
-            };
-            process.OutputDataReceived += (sender, e) => Console.WriteLine(e.Data);
-            process.Start();
-            var output = await process.StandardOutput.ReadToEndAsync();
-            await process.WaitForExitAsync();
-            return output.Trim();
+            }
         }
-    }
 
-    public void Pause()
-    {
-        if (_isPlaying)
+        public void StopPlaying(ulong guildId)
         {
-            // 단순히 프로세스를 일시정지하는 것은 쉽지 않으나,
-            // 여기서는 프로세스를 stop하지 않고 데이터를 읽지 않는 방식으로 "정지"를 모사할 수도 있다.
-            // 실제 구현에서는 ffmpeg에 일시정지 명령을 보내거나, 재생 로직을 더 정교하게 구현 필요.
-            // 간략히 상태만 토글한다고 가정.
-            _isPaused = !_isPaused;
-            // 일시정지 구현 예시(실제 동작x): _ffmpeg.Suspend();
+            if (PlayerContexts.TryGetValue(guildId, out var context))
+            {
+                context.IsPlaying = false;
+                context.IsPaused = false;
+                context.CancellationTokenSource?.Cancel(); // 재생중인 Task 취소 요청
+                context.CancellationTokenSource?.Dispose();
+                context.CancellationTokenSource = null;
+            }
+        }
+
+        public async Task PlayAsync(ulong guildId, string youtubeUrl)
+        {
+            if (!PlayerContexts.TryGetValue(guildId, out var context))
+            {
+                throw new Exception("해당 길드에 대한 컨텍스트가 없습니다. 먼저 Join을 수행하세요.");
+            }
+
+            if (context.AudioClient == null)
+            {
+                throw new Exception("음성 채널에 봇이 접속되어 있지 않습니다.");
+            }
+
+            context.IsPlaying = true;
+            context.IsPaused = false;
+
+            // Stop 명령 시 사용할 CancellationTokenSource
+            context.CancellationTokenSource = new CancellationTokenSource();
+
+            // 재생 Task 시작
+            await StreamAudioAsync(context, youtubeUrl, context.CancellationTokenSource.Token);
+        }
+
+        private async Task StreamAudioAsync(PlayerContext context, string url, CancellationToken cancellationToken)
+        {
+            var client = context.AudioClient;
+
+            if (client is null)
+            {
+                return;
+            }
+
+            var streamProvider = StreamProvider.GetProvider(url);
+
+            var audioProcess = streamProvider.StartStream(url);
+            var discordStream = client.CreatePCMStream(AudioApplication.Mixed, 96000, packetLoss: 10);
+
+            context.IsPlaying = true;
+            {
+                var discordStreamTask = Task.Run(async () =>
+                {
+                    try
+                    {
+                        await audioProcess.StandardOutput.BaseStream.CopyToAsync(discordStream, cancellationToken);
+                    }
+                    catch (Exception ex)
+                    {
+                        Console.WriteLine("ffmpeg to discord pipe error: " + ex.Message);
+                    }
+                    finally
+                    {
+                        await discordStream.FlushAsync(cancellationToken);
+                        await discordStream.DisposeAsync();
+                    }
+                }, cancellationToken);
+
+                await streamProvider.WaitForStreamAsync();
+                await discordStreamTask;
+                await audioProcess.WaitForExitAsync(cancellationToken);
+            }
+            context.IsPlaying = false;
+        }
+
+        public void Pause(ulong guildId)
+        {
+            if (PlayerContexts.TryGetValue(guildId, out var context))
+            {
+                if (context.IsPlaying)
+                {
+                    // 실제 오디오 일시정지는 여기서 추가 구현 필요
+                    // 현재는 단순히 상태값만 토글
+                    context.IsPaused = !context.IsPaused;
+                }
+            }
+        }
+
+        public PlayerContext? GetContext(ulong guildId)
+        {
+            PlayerContexts.TryGetValue(guildId, out var context);
+            return context;
         }
     }
-
-    public bool IsPlaying => _isPlaying;
-    public bool IsPaused => _isPaused;
 }
