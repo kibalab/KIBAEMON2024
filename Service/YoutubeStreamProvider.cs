@@ -1,4 +1,5 @@
 ﻿using System.Diagnostics;
+using YoutubeExplode;
 
 namespace KIBAEMON2024_CSharp.Service;
 
@@ -143,5 +144,14 @@ public class YoutubeStreamProvider : IStreamProvider
         await ffmpeg.WaitForExitAsync();
 
         return previewPath;
+    }
+
+    public async Task<VideoInfo> GetInfo(string url)
+    {
+        var youtube = new YoutubeClient();
+
+        var video = await youtube.Videos.GetAsync(url);
+
+        return new VideoInfo(video.Title, video.Author.ChannelTitle, video.Author.ChannelUrl, video.Duration?.Ticks ?? 0, video.Url);
     }
 }

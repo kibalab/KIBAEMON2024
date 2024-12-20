@@ -78,11 +78,15 @@ public class MusicCommands : ICommandGroup
             }
         }
 
-        var previewUrl = await player.StreamProvider.GetProvider(url).GetPreviewUrl(url);
+        var provider = player.StreamProvider.GetProvider(url);
+        var previewUrl = await provider.GetPreviewUrl(url);
+        var videoInfo = await provider.GetInfo(url);
+        var duration = new TimeSpan(videoInfo.Duration);
+        var playingText = $"재생할 영상: {videoInfo.Title} - {videoInfo.Author} ({duration:mm\\:ss})";
 
         await using (var fileStream = File.OpenRead(previewUrl))
         {
-            await context.Channel.SendFileAsync(fileStream, "preview.gif");
+            await context.Channel.SendFileAsync(fileStream, "preview.gif", playingText);
         }
 
         await player.PlayAsync(guildId.Value, url);

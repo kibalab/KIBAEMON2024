@@ -2,6 +2,8 @@
 
 namespace KIBAEMON2024_CSharp.Service;
 
+public record VideoInfo(string Title, string Author, string AuthorUrl, long Duration, string Url);
+
 public interface IStreamProvider
 {
     bool IsMine(string url);
@@ -17,4 +19,6 @@ public interface IStreamProvider
     Task WaitForStreamAsync();
 
     Task<string> GetPreviewUrl(string url);
+
+    Task<VideoInfo> GetInfo(string url);
 }
