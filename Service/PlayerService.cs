@@ -18,7 +18,7 @@ namespace KIBAEMON2024_CSharp.Service
     {
         private Dictionary<ulong, PlayerContext> PlayerContexts { get; set; } = new();
 
-        private StreamProviderManager StreamProvider { get; } = new();
+        public StreamProviderManager StreamProvider { get; } = new();
 
         public async Task JoinAsync(SocketVoiceChannel channel)
         {
@@ -134,7 +134,7 @@ namespace KIBAEMON2024_CSharp.Service
                 if (context.IsPlaying)
                 {
                     // 실제 오디오 일시정지는 여기서 추가 구현 필요
-                    // 현재는 단순히 상태값만 토글
+
                     context.IsPaused = !context.IsPaused;
                 }
             }

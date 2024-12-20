@@ -28,4 +28,9 @@ public class SoundCloudStreamProvider : IStreamProvider
     {
         throw new NotImplementedException();
     }
+
+    public Task<string> GetPreviewUrl(string url)
+    {
+        throw new NotImplementedException();
+    }
 }

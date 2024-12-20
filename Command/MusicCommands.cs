@@ -78,7 +78,13 @@ public class MusicCommands : ICommandGroup
             }
         }
 
-        await context.Channel.SendMessageAsync($"재생 시작: {url}");
+        var previewUrl = await player.StreamProvider.GetProvider(url).GetPreviewUrl(url);
+
+        await using (var fileStream = File.OpenRead(previewUrl))
+        {
+            await context.Channel.SendFileAsync(fileStream, "preview.gif");
+        }
+
         await player.PlayAsync(guildId.Value, url);
     }
 

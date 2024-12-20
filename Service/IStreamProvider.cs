@@ -15,4 +15,6 @@ public interface IStreamProvider
     Process StartStream(string url);
 
     Task WaitForStreamAsync();
+
+    Task<string> GetPreviewUrl(string url);
 }
