@@ -2,6 +2,7 @@
 using Discord.WebSocket;
 using KIBAEMON2024_Audio;
 using KIBAEMON2024_Core;
+using KIBAEMON2024_Core.Struct;
 using KIBAEMON2024_CSharp.System;
 
 namespace KIBAEMON2024_CSharp.Command;

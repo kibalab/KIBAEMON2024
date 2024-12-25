@@ -35,7 +35,8 @@
     </ItemGroup>
 
     <ItemGroup>
-      <ProjectReference Include="KIBAEMON2024-Core\KIBAEMON2024-Core.csproj" />
+      <ProjectReference Include="..\KIBAEMON2024-Core\KIBAEMON2024-Core.csproj" />
+      <ProjectReference Include="..\KIBAEMON2024-Music\KIBAEMON2024-Music.csproj" />
     </ItemGroup>
 
 </Project>

@@ -1,4 +1,5 @@
-﻿using Discord;
+﻿using System.Reflection;
+using Discord;
 using KIBAEMON2024_CSharp.Enviroment;
 
 namespace KIBAEMON2024_CSharp;
@@ -20,6 +21,9 @@ static class BotRunner
         await bot.Client.LoginAsync(TokenType.Bot, bot.Authorization.Token);
         await bot.Client.StartAsync();
         Console.WriteLine($"Bot {bot.Name} started.");
+
+        var assembly = Assembly.GetExecutingAssembly();
+        bot.CommandManager.RegisterCommandsFromAssembly(assembly);
 
         await Task.Delay(-1);
     }
