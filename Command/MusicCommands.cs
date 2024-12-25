@@ -56,4 +56,20 @@ public class MusicCommands : ICommandGroup
         await player.StopAsync(guildId.Value);
         await context.Channel.SendMessageAsync("재생을 중지했습니다.");
     }
+
+    [Command("music", "다음 곡 재생", "skip")]
+    public async Task SkipAsync(Bot bot, CommandContext context, CommandParameters parameters)
+    {
+        var player = bot.GetService<AudioPlayerService>();
+        var guildId = (context.Guild as SocketGuild)?.Id;
+
+        if (guildId == null)
+        {
+            await context.Channel.SendMessageAsync("길드에서만 사용할 수 있습니다.");
+            return;
+        }
+
+        await player.SkipAsync(guildId.Value);
+        await context.Channel.SendMessageAsync("다음 곡을 재생합니다.");
+    }
 }

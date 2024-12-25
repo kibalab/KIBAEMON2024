@@ -3,6 +3,7 @@
 using System.Diagnostics;
 using Discord.Audio;
 using Discord.WebSocket;
+using KIBAEMON2024_CSharp.Extension;
 using ConnectionState = Discord.ConnectionState;
 
 namespace KIBAEMON2024_Audio;
@@ -53,28 +54,26 @@ public class AudioScheduler(ISocketMessageChannel textChannel)
                 break;
             }
 
-            await TextChannel.SendMessageAsync($"`{currentTrack.Title}` 재생을 시작합니다.");
-
-            var guild = (TextChannel as SocketGuildChannel)?.Guild;
-            if (guild == null)
+            if (AudioClient?.ConnectionState is not ConnectionState.Connected)
             {
-                await TextChannel.SendMessageAsync("길드를 찾을 수 없습니다. 재생을 중단합니다.");
-                IsPlaying = false;
-                return;
-            }
+                if (!TextChannel.TryGetGuild(out var guild) || guild is null)
+                {
+                    await TextChannel.SendMessageAsync("길드를 찾을 수 없습니다.");
+                    IsPlaying = false;
+                    return;
+                }
 
-            var voiceChannel = guild.GetVoiceChannel(VoiceChannelId);
-            if (voiceChannel == null)
-            {
-                await TextChannel.SendMessageAsync("음성 채널을 찾을 수 없습니다. 재생을 중단합니다.");
-                IsPlaying = false;
-                return;
-            }
+                if (!guild.TryGetVoiceChannel(VoiceChannelId, out var voiceChannel) || voiceChannel is null)
+                {
+                    await TextChannel.SendMessageAsync("음성 채널을 찾을 수 없습니다.");
+                    IsPlaying = false;
+                    return;
+                }
 
-            if (AudioClient == null || AudioClient.ConnectionState != ConnectionState.Connected)
-            {
                 AudioClient = await voiceChannel.ConnectAsync();
             }
+
+            await TextChannel.SendMessageAsync($"`{currentTrack.Title}` 재생을 시작합니다.");
 
             try
             {
@@ -107,28 +106,6 @@ public class AudioScheduler(ISocketMessageChannel textChannel)
             }
         }
 
-        if (AudioClient != null)
-        {
-            await AudioClient.StopAsync();
-            AudioClient = null;
-        }
-
         IsPlaying = false;
-    }
-
-    private static Process CreateFFmpegProcess(string url)
-    {
-        var processStartInfo = new ProcessStartInfo
-        {
-            FileName = "ffmpeg",
-            Arguments = "-hide_banner -loglevel error -i pipe:0 -b:a 384k -ac 2 -f s16le -ar 48000 pipe:1 -af loudnorm=I=-16:TP=-1.5:LRA=11:measured_I=-11.8:measured_TP=0.5:measured_LRA=7.8:measured_thresh=-21.9:offset=0:linear=true::print_format=summary",
-            UseShellExecute = false,
-            RedirectStandardInput = true,
-            RedirectStandardOutput = true,
-            RedirectStandardError = true,
-            CreateNoWindow = true
-        };
-
-        return Process.Start(processStartInfo)!;
     }
 }

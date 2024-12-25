@@ -65,7 +65,7 @@ public class YoutubeSolver : IPlatformSolver
 
     public async Task<string> DownloadPreview(string url)
     {
-        var previewPath = Path.Combine(Path.GetTempPath(), Guid.NewGuid() + ".gif");
+        var previewPath = Path.Combine(Path.GetTempPath(), Guid.NewGuid() + ".webp");
 
         var ytdLp = new Process
         {
@@ -88,7 +88,7 @@ public class YoutubeSolver : IPlatformSolver
             StartInfo = new ProcessStartInfo
             {
                 FileName = "ffmpeg",
-                Arguments = $"-ss 0 -t 3 -i \"{output}\" -vf \"scale=720:-1:force_original_aspect_ratio=decrease,fps=10\" -loop 0 -y \"{previewPath}\"",
+                Arguments = $"-ss 0 -t 3 -i \"{output}\" -vf \"scale=720:-1:force_original_aspect_ratio=decrease,fps=10\" -vcodec libwebp_anim -q:v 66 -loop 0 -y \"{previewPath}\"",
                 UseShellExecute = false,
                 CreateNoWindow = true
             }
@@ -124,7 +124,7 @@ public class YoutubeSolver : IPlatformSolver
 
         async Task? StartProcessLogger()
         {
-            while (await process?.StandardError.ReadLineAsync()! is { } line)
+            while (await process.StandardError.ReadLineAsync()! is { } line)
             {
                 Console.WriteLine($"[{process.StartInfo.FileName}] {line}");
             }

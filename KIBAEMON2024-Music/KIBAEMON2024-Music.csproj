@@ -14,6 +14,7 @@
 
     <ItemGroup>
       <ProjectReference Include="..\KIBAEMON2024-Core\KIBAEMON2024-Core.csproj" />
+      <ProjectReference Include="..\KIBAEMON2024-CSharp.csproj" />
     </ItemGroup>
 
 </Project>
