@@ -1,28 +1,18 @@
 ﻿using System.Diagnostics;
 using YoutubeExplode;
 
-namespace KIBAEMON2024_CSharp.Service;
+namespace KIBAEMON2024_Audio;
 
-/// <summary>
-/// 유튜브 오디오 스트림을 제공하는 클래스
-/// 절차:
-/// 1. yt-dlp로 오디오 스트림을 받아 ffmpeg으로 파이핑
-/// 2. ffmpeg으로 파이핑된 오디오 스트림을 Discord에 전달
-/// </summary>
-public class YoutubeStreamProvider : IStreamProvider
+public class YoutubeSolver : IPlatformSolver
 {
-    protected Process? YtdLp { get; set; } = null;
-    protected Process? FFmpeg { get; set; } = null;
-    protected Task? PipeTask { get; set; } = null;
-
     public bool IsMine(string url)
     {
         return url.Contains("youtube.com") || url.Contains("youtu.be");
     }
 
-    public Process StartStream(string url)
+    public Task<Stream> Solve(string url)
     {
-        YtdLp = new Process
+        var ytdLp = new Process
         {
             StartInfo = new ProcessStartInfo
             {
@@ -35,7 +25,7 @@ public class YoutubeStreamProvider : IStreamProvider
             }
         };
 
-        FFmpeg = new Process
+        var ffmpeg = new Process
         {
             StartInfo = new ProcessStartInfo
             {
@@ -49,14 +39,16 @@ public class YoutubeStreamProvider : IStreamProvider
             }
         };
 
-        YtdLp.Start();
-        FFmpeg.Start();
+        ytdLp.Start();
+        ffmpeg.Start();
+        StartLogger(ytdLp);
+        StartLogger(ffmpeg);
 
-        PipeTask = Task.Run(async () =>
+        Task.Run(async () =>
         {
             try
             {
-                await YtdLp.StandardOutput.BaseStream.CopyToAsync(FFmpeg.StandardInput.BaseStream);
+                await ytdLp.StandardOutput.BaseStream.CopyToAsync(ffmpeg.StandardInput.BaseStream);
             }
             catch (Exception ex)
             {
@@ -64,53 +56,14 @@ public class YoutubeStreamProvider : IStreamProvider
             }
             finally
             {
-                FFmpeg.StandardInput.Close();
+                ffmpeg.StandardInput.Close();
             }
         });
 
-        StartLogger();
-
-        return FFmpeg;
+        return Task.FromResult(ffmpeg.StandardOutput.BaseStream);
     }
 
-    public async Task WaitForStreamAsync()
-    {
-        if (YtdLp != null && PipeTask != null)
-        {
-            await YtdLp.WaitForExitAsync();
-            await PipeTask;
-        }
-
-        YtdLp = null;
-        FFmpeg = null;
-        PipeTask = null;
-    }
-
-    protected void StartLogger()
-    {
-        Task.Run(TydLpLogger);
-        Task.Run(FFmpegLogger);
-
-        return;
-
-        async Task? TydLpLogger()
-        {
-            while (await YtdLp?.StandardError.ReadLineAsync()! is { } line)
-            {
-                Console.WriteLine("[yt-dlp ERROR] " + line);
-            }
-        }
-
-        async Task? FFmpegLogger()
-        {
-            while (await FFmpeg?.StandardError.ReadLineAsync()! is { } line)
-            {
-                Console.WriteLine("[ffmpeg ERROR] " + line);
-            }
-        }
-    }
-
-    public async Task<string> GetPreviewUrl(string url)
+    public async Task<string> DownloadPreview(string url)
     {
         var previewPath = Path.Combine(Path.GetTempPath(), Guid.NewGuid() + ".gif");
 
@@ -126,6 +79,7 @@ public class YoutubeStreamProvider : IStreamProvider
             }
         };
         ytdLp.Start();
+        StartLogger(ytdLp);
         var output = await ytdLp.StandardOutput.ReadToEndAsync();
         await ytdLp.WaitForExitAsync();
 
@@ -141,17 +95,39 @@ public class YoutubeStreamProvider : IStreamProvider
         };
 
         ffmpeg.Start();
+        StartLogger(ytdLp);
         await ffmpeg.WaitForExitAsync();
 
         return previewPath;
     }
 
-    public async Task<VideoInfo> GetInfo(string url)
+    public async Task<AudioTrack> FetchTrackInfo(string url)
     {
         var youtube = new YoutubeClient();
 
         var video = await youtube.Videos.GetAsync(url);
 
-        return new VideoInfo(video.Title, video.Author.ChannelTitle, video.Author.ChannelUrl, video.Duration?.Ticks ?? 0, video.Url);
+        return new AudioTrack
+        {
+            Title = video.Title,
+            Author = video.Author.ChannelTitle,
+            Duration = video.Duration ?? TimeSpan.Zero,
+            Url = url,
+        };
+    }
+
+    private void StartLogger(Process process)
+    {
+        Task.Run(StartProcessLogger);
+
+        return;
+
+        async Task? StartProcessLogger()
+        {
+            while (await process?.StandardError.ReadLineAsync()! is { } line)
+            {
+                Console.WriteLine($"[{process.StartInfo.FileName}] {line}");
+            }
+        }
     }
 }
