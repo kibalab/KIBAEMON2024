@@ -1,6 +1,4 @@
-﻿using KIBAEMON2024_Core;
-using KIBAEMON2024_Core.Struct;
-using KIBAEMON2024_CSharp.System;
+﻿using KIBAEMON2024_Core.Struct;
 
 namespace KIBAEMON2024_CSharp.Command;
 

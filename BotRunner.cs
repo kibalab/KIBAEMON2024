@@ -1,6 +1,6 @@
 ﻿using System.Reflection;
 using Discord;
-using KIBAEMON2024_CSharp.Enviroment;
+using KIBAEMON2024_Core.Manager;
 
 namespace KIBAEMON2024_CSharp;
 
